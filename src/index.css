@@ -169,22 +169,34 @@ body {
   pointer-events: none;
 }
 
-.kb-search .ant-input-affix-wrapper,
-.kb-search .ant-input {
+/* 外层包装器：统一背景和边框 */
+.kb-search .ant-input-affix-wrapper {
   background: var(--bg-dark-elevated) !important;
   border: 1px solid var(--border-dark-strong) !important;
-  color: var(--text-on-dark) !important;
   border-radius: 8px !important;
+  padding: 4px 11px !important;
   transition: all var(--duration-base) var(--ease-out);
 }
 
-.kb-search .ant-input::placeholder { color: var(--text-on-dark-dim) !important; }
-.kb-search .ant-input:hover { border-color: rgba(255, 255, 255, 0.15) !important; }
-.kb-search .ant-input:focus,
-.kb-search .ant-input-affix-wrapper-focused {
+.kb-search .ant-input-affix-wrapper:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.kb-search .ant-input-affix-wrapper-focused,
+.kb-search .ant-input-affix-wrapper:focus-within {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-subtle), 0 0 12px rgba(129, 140, 248, 0.08) !important;
 }
+
+/* 内层 input：去掉独立边框和背景 */
+.kb-search .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-on-dark) !important;
+}
+
+.kb-search .ant-input::placeholder { color: var(--text-on-dark-dim) !important; }
 .kb-search .ant-input-prefix { color: var(--text-on-dark-dim) !important; margin-inline-end: 8px !important; }
 .kb-search .ant-input-clear-icon { color: var(--text-on-dark-dim) !important; }
 .kb-search .ant-input-clear-icon:hover { color: var(--text-on-dark-secondary) !important; }
