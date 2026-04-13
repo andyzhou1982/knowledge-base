@@ -43,9 +43,11 @@ function highlightAndScroll(container: HTMLElement, terms: string[]) {
     // 找到所有匹配位置
     const matches: { start: number; end: number }[] = [];
     for (const term of sorted) {
+      const lower = text.toLowerCase();
+      const termLower = term.toLowerCase();
       let pos = 0;
       while (true) {
-        const idx = text.indexOf(term, pos);
+        const idx = lower.indexOf(termLower, pos);
         if (idx === -1) break;
         matches.push({ start: idx, end: idx + term.length });
         pos = idx + 1;
