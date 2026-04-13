@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import 'github-markdown-css/github-markdown-light.css';
-import 'highlight.js/styles/github.css';
+import 'highlight.js/styles/atom-one-dark.css';
 
 interface MarkdownViewerProps {
   content: string;

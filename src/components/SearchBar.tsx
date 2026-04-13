@@ -1,8 +1,6 @@
-import { Input, List, Typography } from 'antd';
+import { Input, List } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import React, { useState, useCallback } from 'react';
-
-const { Text } = Typography;
 
 interface SearchResult {
   relativePath: string;
@@ -32,7 +30,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
   );
 
   return (
-    <div style={{ padding: '8px 12px' }}>
+    <div className="kb-search">
       <Input
         placeholder="搜索文档..."
         prefix={<SearchOutlined />}
@@ -42,12 +40,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
       />
       {results.length > 0 && (
         <List
+          className="kb-search-results"
           size="small"
           dataSource={results}
-          style={{ marginTop: 8, maxHeight: 300, overflowY: 'auto' }}
           renderItem={(item) => (
             <List.Item
-              style={{ cursor: 'pointer', padding: '6px 12px' }}
               onClick={() => {
                 const terms = query.trim().split(/\s+/).filter(Boolean);
                 onSelect(item.relativePath, terms);
@@ -55,12 +52,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
                 setQuery('');
               }}
             >
-              <Text ellipsis style={{ maxWidth: '100%' }}>
-                {item.title}
-                <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                  {item.relativePath}
-                </Text>
-              </Text>
+              <div style={{ width: '100%', overflow: 'hidden' }}>
+                <div className="kb-search-result-title">{item.title}</div>
+                <div className="kb-search-result-path">{item.relativePath}</div>
+              </div>
             </List.Item>
           )}
         />

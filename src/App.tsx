@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ConfigProvider, Layout, Typography, Spin, Empty } from 'antd';
+import { ConfigProvider, Layout, Typography, Spin, Empty, theme } from 'antd';
+import { BookOutlined } from '@ant-design/icons';
 import DocTree, { type TreeNode } from './components/DocTree';
 import MarkdownViewer from './components/MarkdownViewer';
 import SearchBar from './components/SearchBar';
@@ -8,6 +9,8 @@ import './App.css';
 
 const { Sider, Content, Header } = Layout;
 const { Title } = Typography;
+
+const HEADER_HEIGHT = 52;
 
 function App() {
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
@@ -19,7 +22,6 @@ function App() {
 
   const bm25 = useMemo(() => new BM25Search(), []);
 
-  // Load tree and search index on mount
   useEffect(() => {
     Promise.all([
       fetch('/docs-tree.json').then((r) => r.json()),
@@ -33,7 +35,6 @@ function App() {
       .finally(() => setInitLoading(false));
   }, [bm25]);
 
-  // Load markdown content
   const loadDoc = useCallback(async (relativePath: string, terms?: string[]) => {
     setLoading(true);
     setSelectedKey(relativePath);
@@ -42,7 +43,7 @@ function App() {
       const res = await fetch(`/docs/${relativePath}`);
       const text = await res.text();
       setContent(text);
-    } catch (err) {
+    } catch {
       setContent('# 加载失败\n\n无法加载该文档。');
     } finally {
       setLoading(false);
@@ -56,7 +57,7 @@ function App() {
 
   if (initLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="kb-init-loading">
         <Spin size="large" tip="加载知识库..." />
       </div>
     );
@@ -66,41 +67,65 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#1677ff',
-          borderRadius: 6,
+          colorPrimary: '#818cf8',
+          borderRadius: 8,
         },
       }}
     >
       <Layout style={{ height: '100vh' }}>
         <Header
+          className="kb-header"
           style={{
             display: 'flex',
             alignItems: 'center',
             padding: '0 24px',
-            background: '#fff',
-            borderBottom: '1px solid #f0f0f0',
+            height: HEADER_HEIGHT,
+            lineHeight: `${HEADER_HEIGHT}px`,
           }}
         >
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="kb-header-title">
             知识库
+            <span className="title-accent" />
           </Title>
         </Header>
-        <Layout>
-          <Sider
-            width={300}
-            style={{
-              background: '#fff',
-              borderRight: '1px solid #f0f0f0',
-              overflow: 'auto',
-              height: 'calc(100vh - 64px)',
+        <Layout style={{ background: 'transparent' }}>
+          <ConfigProvider
+            theme={{
+              algorithm: theme.darkAlgorithm,
+              token: {
+                colorPrimary: '#818cf8',
+                borderRadius: 8,
+                colorBgContainer: '#09090f',
+                colorBgElevated: '#111118',
+                colorBorder: 'rgba(255,255,255,0.06)',
+                colorText: '#e4e4e7',
+                colorTextSecondary: '#71717a',
+                colorTextPlaceholder: '#4a4a5e',
+              },
             }}
           >
-            <SearchBar onSearch={handleSearch} onSelect={(path, terms) => loadDoc(path, terms)} />
-            <div style={{ padding: '0 12px' }}>
-              <DocTree treeData={treeData} onSelect={loadDoc} selectedKey={selectedKey} />
-            </div>
-          </Sider>
-          <Content style={{ background: '#fff', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+            <Sider
+              className="kb-sidebar"
+              width={300}
+              style={{
+                overflow: 'auto',
+                height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+              }}
+            >
+              <SearchBar onSearch={handleSearch} onSelect={(path, terms) => loadDoc(path, terms)} />
+              <div style={{ padding: '0 12px' }}>
+                <DocTree treeData={treeData} onSelect={loadDoc} selectedKey={selectedKey} />
+              </div>
+            </Sider>
+          </ConfigProvider>
+          <Content
+            className="kb-content"
+            style={{
+              background: '#fdfdfd',
+              height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+              overflow: 'hidden',
+            }}
+          >
             {loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 100 }}>
                 <Spin size="large" />
@@ -108,7 +133,10 @@ function App() {
             ) : content ? (
               <MarkdownViewer content={content} highlightTerms={highlightTerms} />
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <div className="kb-empty-state">
+                <div className="kb-empty-icon">
+                  <BookOutlined />
+                </div>
                 <Empty description="请从左侧选择文档查看" />
               </div>
             )}

@@ -1,8 +1,12 @@
-/* Knowledge Base App Styles */
+/* ═══════════════════════════════════════════
+   Search Highlight
+   ═══════════════════════════════════════════ */
 
-/* 搜索关键词高亮 */
 .search-highlight {
-  background-color: #fff3cd;
-  padding: 1px 2px;
-  border-radius: 2px;
+  background: linear-gradient(120deg, var(--highlight-bg), #fde68a);
+  color: var(--highlight-text);
+  padding: 1px 3px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.25);
+  transition: box-shadow var(--duration-base) var(--ease-out);
 }
