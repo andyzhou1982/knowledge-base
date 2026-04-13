@@ -1,1 +1,13 @@
 /* Knowledge Base App Styles */
+
+/* 搜索关键词高亮 */
+.search-highlight {
+  background-color: #fff3cd;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.search-highlight.search-highlight-first {
+  background-color: #ffc107;
+  font-weight: 600;
+}

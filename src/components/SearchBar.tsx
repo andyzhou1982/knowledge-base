@@ -12,7 +12,7 @@ interface SearchResult {
 
 interface SearchBarProps {
   onSearch: (query: string) => SearchResult[];
-  onSelect: (relativePath: string) => void;
+  onSelect: (relativePath: string, highlightTerms: string[]) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
@@ -49,7 +49,8 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
             <List.Item
               style={{ cursor: 'pointer', padding: '6px 12px' }}
               onClick={() => {
-                onSelect(item.relativePath);
+                const terms = query.trim().split(/\s+/).filter(Boolean);
+                onSelect(item.relativePath, terms);
                 setResults([]);
                 setQuery('');
               }}

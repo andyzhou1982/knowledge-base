@@ -13,6 +13,7 @@ function App() {
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | undefined>();
   const [content, setContent] = useState('');
+  const [highlightTerms, setHighlightTerms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
 
@@ -33,9 +34,10 @@ function App() {
   }, [bm25]);
 
   // Load markdown content
-  const loadDoc = useCallback(async (relativePath: string) => {
+  const loadDoc = useCallback(async (relativePath: string, terms?: string[]) => {
     setLoading(true);
     setSelectedKey(relativePath);
+    setHighlightTerms(terms || []);
     try {
       const res = await fetch(`/docs/${relativePath}`);
       const text = await res.text();
@@ -93,7 +95,7 @@ function App() {
               height: 'calc(100vh - 64px)',
             }}
           >
-            <SearchBar onSearch={handleSearch} onSelect={loadDoc} />
+            <SearchBar onSearch={handleSearch} onSelect={(path, terms) => loadDoc(path, terms)} />
             <div style={{ padding: '0 12px' }}>
               <DocTree treeData={treeData} onSelect={loadDoc} selectedKey={selectedKey} />
             </div>
@@ -104,7 +106,7 @@ function App() {
                 <Spin size="large" />
               </div>
             ) : content ? (
-              <MarkdownViewer content={content} />
+              <MarkdownViewer content={content} highlightTerms={highlightTerms} />
             ) : (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <Empty description="请从左侧选择文档查看" />

@@ -20,7 +20,7 @@ src/
   components/
     DocTree.tsx              # Ant Design DirectoryTree，展示文档目录
     SearchBar.tsx            # 搜索输入框 + 结果列表
-    MarkdownViewer.tsx       # markdown-it 渲染 + highlight.js 代码高亮
+    MarkdownViewer.tsx       # markdown-it 渲染 + highlight.js 代码高亮 + 搜索关键词高亮与定位
   utils/
     search.ts                # BM25 搜索引擎实现
 vite-plugin-docs.ts          # Vite 插件：构建时扫描 docs、jieba 分词、生成索引 JSON
@@ -141,7 +141,19 @@ const tokens = jieba.cutForSearch(content);
 ### 3. UI 交互 (`SearchBar.tsx`)
 
 - 用户输入时实时触发搜索（`onChange` → `onSearch`）
-- 搜索结果以列表展示，点击结果项加载对应 Markdown 文档
+- 搜索结果以列表展示，点击结果项加载对应 Markdown 文档，并将搜索词传递给 MarkdownViewer 进行高亮
+
+### 4. 搜索结果高亮与定位 (`MarkdownViewer.tsx`)
+
+点击搜索结果后，MarkdownViewer 接收 `highlightTerms` prop，执行以下流程：
+
+1. **高亮**：用 `TreeWalker` 遍历 DOM 文本节点，将匹配的关键词包裹在 `<mark class="search-highlight">` 标签中
+2. **首个定位**：第一个匹配项额外添加 `search-highlight-first` 类，样式更深（`#ffc107`），并调用 `scrollIntoView({ block: 'center' })` 滚动到可视区域中央
+3. **目录树点击**：不传 `highlightTerms`，页面回到顶部，不高亮
+
+高亮样式定义在 `App.css`：
+- `.search-highlight`：淡黄底 `#fff3cd`
+- `.search-highlight-first`：深黄底 `#ffc107` + 加粗
 
 ### 模块总结
 
@@ -151,9 +163,9 @@ const tokens = jieba.cutForSearch(content);
 | `src/utils/search.ts` | 正向最大匹配 + BM25 | 运行时对查询分词（区分空格语义）+ BM25 相关性排序 |
 | `SearchBar.tsx` | Ant Design Input | 搜索输入 + 结果展示 |
 | `DocTree.tsx` | Ant Design Tree | 文件目录树导航 |
-| `MarkdownViewer.tsx` | markdown-it + highlight.js | 渲染 Markdown 并高亮代码 |
+| `MarkdownViewer.tsx` | markdown-it + highlight.js + TreeWalker | 渲染 Markdown、代码高亮、搜索关键词高亮与定位 |
 
-核心思路：**构建时 jieba 分词 + 短语 token 拼接，运行时正向最大匹配 + BM25 排序**。通过空格区分短语搜索与词组搜索，构建时和运行时分词保持一致，实现精准的中文文档全文搜索。
+核心思路：**构建时 jieba 分词 + 短语 token 拼接，运行时正向最大匹配 + BM25 排序，搜索结果点击后关键词高亮定位**。通过空格区分短语搜索与词组搜索，构建时和运行时分词保持一致，实现精准的中文文档全文搜索。
 
 ## 编码规范
 
