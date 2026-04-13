@@ -1,0 +1,43 @@
+[
+  {
+    "title": "backend",
+    "key": "backend",
+    "isLeaf": false,
+    "children": [
+      {
+        "title": "nodejs-best-practices.md",
+        "key": "backend/nodejs-best-practices.md",
+        "isLeaf": true
+      }
+    ]
+  },
+  {
+    "title": "devops",
+    "key": "devops",
+    "isLeaf": false,
+    "children": [
+      {
+        "title": "docker-guide.md",
+        "key": "devops/docker-guide.md",
+        "isLeaf": true
+      }
+    ]
+  },
+  {
+    "title": "frontend",
+    "key": "frontend",
+    "isLeaf": false,
+    "children": [
+      {
+        "title": "react-guide.md",
+        "key": "frontend/react-guide.md",
+        "isLeaf": true
+      },
+      {
+        "title": "typescript-tips.md",
+        "key": "frontend/typescript-tips.md",
+        "isLeaf": true
+      }
+    ]
+  }
+]
