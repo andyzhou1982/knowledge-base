@@ -118,7 +118,7 @@ export function docsPlugin(): Plugin {
         const fullPath = path.join(docsDir, relPath);
         const content = fs.readFileSync(fullPath, 'utf-8');
         const title = content.match(/^#\s+(.+)$/m)?.[1] || path.basename(relPath, '.md');
-        const tokens = jieba.cutForSearch(content);
+        const tokens = jieba.cutForSearch(content).map((t) => (/[\u4e00-\u9fff]/.test(t) ? t : t.toLowerCase()));
         // 对连续 CJK token 做相邻拼接，生成短语 token
         const phraseTokens = generatePhraseTokens(tokens);
         return { relativePath: relPath, title, content, tokens: [...tokens, ...phraseTokens] };

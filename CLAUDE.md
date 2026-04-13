@@ -98,11 +98,11 @@ Promise.all([
 
 在 `vite-plugin-docs.ts` 中，分两步生成索引 tokens：
 
-**第一步：jieba 分词**
+**第一步：jieba 分词 + 大小写归一化**
 ```ts
-const tokens = jieba.cutForSearch(content);
+const tokens = jieba.cutForSearch(content).map(t => /[\u4e00-\u9fff]/.test(t) ? t : t.toLowerCase());
 ```
-使用 **jieba 分词器**的搜索模式，将中文文档拆成词语列表。例如 `"类型守卫"` 会被分为 `["类型", "守卫"]`。
+使用 **jieba 分词器**的搜索模式，将中文文档拆成词语列表。例如 `"类型守卫"` 会被分为 `["类型", "守卫"]`。非 CJK token 统一转小写，确保与查询端大小写一致（jieba 保留英文原始大小写如 `"Compose"`，查询端会转 `toLowerCase()`，需对齐）。
 
 **第二步：生成短语 token**（`generatePhraseTokens`）
 对连续的 CJK token 做相邻拼接（bigram），将拼接结果作为额外的短语 token 加入索引。例如 jieba 输出 `["类型", "守卫"]`，则额外添加 `"类型守卫"`。这样构建时的 tokens 包含了短语级别的匹配单元。
