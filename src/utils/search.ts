@@ -10,29 +10,76 @@ interface SearchResult {
   score: number;
 }
 
-/** 简单的浏览器端分词：按空格/标点分割 + 中文字符 bigram */
-function tokenizeQuery(query: string): string[] {
+const CJK_REGEX = /[\u4e00-\u9fff]/;
+const CJK_SEGMENT_REGEX = /[\u4e00-\u9fff]+/g;
+
+/** 正向最大匹配：用词典对 CJK 片段做分词 */
+function maxMatch(segment: string, dict: Set<string>): string[] {
+  const tokens: string[] = [];
+  let i = 0;
+  while (i < segment.length) {
+    let matched = false;
+    // 从最长开始尝试匹配，最多 6 个字符
+    for (let len = Math.min(6, segment.length - i); len > 1; len--) {
+      const sub = segment.substring(i, i + len);
+      if (dict.has(sub)) {
+        tokens.push(sub);
+        i += len;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      tokens.push(segment[i]);
+      i++;
+    }
+  }
+  return tokens;
+}
+
+/**
+ * 查询分词：区分空格语义
+ * - 有空格 "类型 守卫" → 各部分独立最大匹配（词组搜索）
+ * - 无空格 "类型守卫" → 先尝试整体匹配，再正向最大匹配（短语搜索）
+ * - 英文部分 → 直接 lowercase
+ */
+function tokenizeQuery(query: string, tokenDict: Set<string>): string[] {
   const tokens: string[] = [];
 
-  // Extract CJK character sequences and non-CJK words
-  const parts = query.split(/[\s,，。！？、；：""''【】《》（）\(\)\[\]\{\}\|\\\/\~`@#\$%\^&\*\-=_\+]+/);
+  // 按标点分割（空格作为语义分隔符单独处理）
+  const parts = query.split(/[,，。！？、；：""''【】《》（）\(\)\[\]\{\}\|\\\/\~`@#\$%\^&\*\-=_\+]+/);
 
   for (const part of parts) {
     if (!part) continue;
-    // Check if it contains CJK characters
-    if (/[\u4e00-\u9fff]/.test(part)) {
-      // Split into individual Chinese characters and bigrams
-      const chars = part.match(/[\u4e00-\u9fff]+/g) || [];
-      for (const segment of chars) {
-        for (let i = 0; i < segment.length; i++) {
-          tokens.push(segment[i]);
-          if (i + 1 < segment.length) {
-            tokens.push(segment.substring(i, i + 2));
+
+    // 按空格拆分，判断是短语还是词组
+    const segments = part.trim().split(/\s+/);
+
+    for (const seg of segments) {
+      if (!seg) continue;
+
+      if (CJK_REGEX.test(seg)) {
+        // 提取 CJK 连续片段
+        const cjkParts = seg.match(CJK_SEGMENT_REGEX) || [];
+        for (const cjk of cjkParts) {
+          // 先尝试整体在词典中
+          if (tokenDict.has(cjk)) {
+            tokens.push(cjk);
+          } else {
+            // 正向最大匹配
+            tokens.push(...maxMatch(cjk, tokenDict));
           }
         }
+        // 提取非 CJK 部分（如英文）
+        const nonCjk = seg.replace(CJK_SEGMENT_REGEX, ' ').trim();
+        if (nonCjk) {
+          for (const w of nonCjk.split(/\s+/)) {
+            if (w) tokens.push(w.toLowerCase());
+          }
+        }
+      } else {
+        tokens.push(seg.toLowerCase());
       }
-    } else {
-      tokens.push(part.toLowerCase());
     }
   }
 
@@ -48,6 +95,7 @@ class BM25Search {
   private docLen: number[] = [];
   private avgLen = 0;
   private N = 0;
+  private tokenDict: Set<string> = new Set();
 
   init(docs: DocIndex[]) {
     this.docs = docs;
@@ -55,6 +103,7 @@ class BM25Search {
     this.df.clear();
     this.tf.clear();
     this.docLen = [];
+    this.tokenDict.clear();
 
     let totalLen = 0;
 
@@ -66,6 +115,7 @@ class BM25Search {
       const tfMap = new Map<string, number>();
       for (const token of tokens) {
         tfMap.set(token, (tfMap.get(token) || 0) + 1);
+        this.tokenDict.add(token);
       }
       this.tf.set(docs[i].relativePath, tfMap);
 
@@ -78,7 +128,7 @@ class BM25Search {
   }
 
   search(query: string, topK = 20): SearchResult[] {
-    const queryTokens = tokenizeQuery(query);
+    const queryTokens = tokenizeQuery(query, this.tokenDict);
     if (queryTokens.length === 0) return [];
 
     const scores: SearchResult[] = [];

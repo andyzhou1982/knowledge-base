@@ -70,6 +70,38 @@ function buildTree(files: string[]): TreeNode[] {
   return root;
 }
 
+/** 判断 token 是否为纯 CJK 字符 */
+function isCJKToken(token: string): boolean {
+  return /^[\u4e00-\u9fff]+$/.test(token);
+}
+
+/** 对连续的 CJK token 做相邻拼接（bigram），生成短语 token */
+function generatePhraseTokens(tokens: string[]): string[] {
+  const phrases: string[] = [];
+  // 提取连续 CJK token 的区间
+  const cjkRanges: { start: number; end: number }[] = [];
+  let i = 0;
+  while (i < tokens.length) {
+    if (isCJKToken(tokens[i])) {
+      const start = i;
+      while (i < tokens.length && isCJKToken(tokens[i])) i++;
+      cjkRanges.push({ start, end: i });
+    } else {
+      i++;
+    }
+  }
+  // 对每个连续区间生成相邻 token 拼接
+  for (const range of cjkRanges) {
+    for (let j = range.start; j < range.end - 1; j++) {
+      const phrase = tokens[j] + tokens[j + 1];
+      if (phrase.length >= 3) {
+        phrases.push(phrase);
+      }
+    }
+  }
+  return [...new Set(phrases)];
+}
+
 export function docsPlugin(): Plugin {
   const docsDir = path.resolve(__dirname, 'public/docs');
 
@@ -87,7 +119,9 @@ export function docsPlugin(): Plugin {
         const content = fs.readFileSync(fullPath, 'utf-8');
         const title = content.match(/^#\s+(.+)$/m)?.[1] || path.basename(relPath, '.md');
         const tokens = jieba.cutForSearch(content);
-        return { relativePath: relPath, title, content, tokens };
+        // 对连续 CJK token 做相邻拼接，生成短语 token
+        const phraseTokens = generatePhraseTokens(tokens);
+        return { relativePath: relPath, title, content, tokens: [...tokens, ...phraseTokens] };
       });
 
       const outputDir = path.resolve(__dirname, 'public');

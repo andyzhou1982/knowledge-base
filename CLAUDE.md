@@ -41,8 +41,8 @@ public/
 
 ### 搜索机制（双阶段）
 
-1. **构建时索引**（`vite-plugin-docs.ts`）：Vite 启动时扫描 `public/docs/`，用 jieba 分词，输出 `docs-tree.json` 和 `search-index.json`
-2. **运行时查询**（`src/utils/search.ts`）：前端加载索引 JSON，对用户查询做轻量分词（英文按空格分割，中文 bigram），然后用 BM25 算法计算相关性评分并排序
+1. **构建时索引**（`vite-plugin-docs.ts`）：Vite 启动时扫描 `public/docs/`，用 jieba 分词 + 相邻 CJK token 拼接生成短语 token，输出 `docs-tree.json` 和 `search-index.json`
+2. **运行时查询**（`src/utils/search.ts`）：前端加载索引 JSON，构建 token 词典，对查询做正向最大匹配分词（区分空格语义），然后用 BM25 算法计算相关性评分并排序
 
 ### 添加文档
 
@@ -94,28 +94,40 @@ Promise.all([
 
 搜索分为**构建时索引**和**运行时查询**两部分：
 
-### 构建时：分词 + 建索引
+### 构建时：分词 + 短语 token + 建索引
 
-在 `vite-plugin-docs.ts:89`：
+在 `vite-plugin-docs.ts` 中，分两步生成索引 tokens：
+
+**第一步：jieba 分词**
 ```ts
 const tokens = jieba.cutForSearch(content);
 ```
-使用 **jieba 分词器**的搜索模式，将中文文档拆成词语列表。例如 `"知识库系统"` 可能被分为 `["知识", "知识库", "库系", "系统"]`。这个分词在 **Node.js 端（构建时）** 完成，前端直接拿到分好的 tokens。
+使用 **jieba 分词器**的搜索模式，将中文文档拆成词语列表。例如 `"类型守卫"` 会被分为 `["类型", "守卫"]`。
+
+**第二步：生成短语 token**（`generatePhraseTokens`）
+对连续的 CJK token 做相邻拼接（bigram），将拼接结果作为额外的短语 token 加入索引。例如 jieba 输出 `["类型", "守卫"]`，则额外添加 `"类型守卫"`。这样构建时的 tokens 包含了短语级别的匹配单元。
+
+最终索引中每个文档保存为：
+```json
+{ "relativePath": "foo.md", "title": "标题", "tokens": ["类型", "守卫", "类型守卫", ...] }
+```
 
 ### 运行时：BM25 搜索算法 (`src/utils/search.ts`)
 
 前端实现了一个完整的 **BM25 排序算法**，这是信息检索领域的经典算法。
 
 **初始化阶段** (`init` 方法)：
+- `tokenDict`：从所有文档 token 构建 `Set<string>` 词典，供查询分词使用
 - `tf`：记录每个文档中每个 token 出现的次数（词频）
 - `df`：记录每个 token 在多少个文档中出现过（文档频率）
 - `docLen`：每个文档的 token 总数
 - `avgLen`：所有文档的平均 token 数
 
 **查询阶段** (`search` 方法)：
-1. **查询分词** (`tokenizeQuery`)：浏览器端轻量分词
+1. **查询分词** (`tokenizeQuery`)：区分空格语义，用 token 词典做正向最大匹配
+   - 无空格 `"类型守卫"` → 整体优先匹配词典，匹配到则作为单个 token → `["类型守卫"]`（短语搜索）
+   - 有空格 `"类型 守卫"` → 各部分独立最大匹配 → `["类型", "守卫"]`（词组搜索）
    - 英文：按空格/标点分割，转小写
-   - 中文：逐字 + 相邻双字组合（bigram），例如 `"搜索"` → `["搜", "搜索", "索"]`
 2. **BM25 评分**：对每个文档计算相关性分数：
    ```
    score = Σ( IDF(token) × TF_norm(token) )
@@ -135,13 +147,13 @@ const tokens = jieba.cutForSearch(content);
 
 | 模块 | 技术 | 作用 |
 |------|------|------|
-| `vite-plugin-docs.ts` | jieba 分词 | 构建时对文档分词，生成索引 JSON |
-| `src/utils/search.ts` | 手写 BM25 | 运行时对查询分词 + BM25 相关性排序 |
+| `vite-plugin-docs.ts` | jieba 分词 + 短语拼接 | 构建时对文档分词，生成含短语 token 的索引 JSON |
+| `src/utils/search.ts` | 正向最大匹配 + BM25 | 运行时对查询分词（区分空格语义）+ BM25 相关性排序 |
 | `SearchBar.tsx` | Ant Design Input | 搜索输入 + 结果展示 |
 | `DocTree.tsx` | Ant Design Tree | 文件目录树导航 |
 | `MarkdownViewer.tsx` | markdown-it + highlight.js | 渲染 Markdown 并高亮代码 |
 
-核心思路：**构建时分词建索引，运行时 BM25 算法排序**，实现了一个纯前端、无需后端服务的中文文档全文搜索。
+核心思路：**构建时 jieba 分词 + 短语 token 拼接，运行时正向最大匹配 + BM25 排序**。通过空格区分短语搜索与词组搜索，构建时和运行时分词保持一致，实现精准的中文文档全文搜索。
 
 ## 编码规范
 
