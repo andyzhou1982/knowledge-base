@@ -38,8 +38,6 @@ function highlightAndScroll(container: HTMLElement, terms: string[]) {
     textNodes.push(walker.currentNode as Text);
   }
 
-  let isFirst = true;
-
   for (const node of textNodes) {
     const text = node.textContent || '';
     // 找到所有匹配位置
@@ -70,10 +68,6 @@ function highlightAndScroll(container: HTMLElement, terms: string[]) {
       }
       const mark = document.createElement('mark');
       mark.className = 'search-highlight';
-      if (isFirst) {
-        mark.className += ' search-highlight-first';
-        isFirst = false;
-      }
       mark.textContent = text.substring(m.start, m.end);
       fragment.appendChild(mark);
       lastIdx = m.end;
@@ -87,7 +81,7 @@ function highlightAndScroll(container: HTMLElement, terms: string[]) {
   }
 
   // 滚动到第一个高亮
-  const first = container.querySelector('.search-highlight-first');
+  const first = container.querySelector('.search-highlight');
   if (first) {
     first.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }

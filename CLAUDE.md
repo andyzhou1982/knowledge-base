@@ -148,12 +148,11 @@ const tokens = jieba.cutForSearch(content).map(t => /[\u4e00-\u9fff]/.test(t) ? 
 点击搜索结果后，MarkdownViewer 接收 `highlightTerms` prop，执行以下流程：
 
 1. **高亮**：用 `TreeWalker` 遍历 DOM 文本节点，将匹配的关键词包裹在 `<mark class="search-highlight">` 标签中
-2. **首个定位**：第一个匹配项额外添加 `search-highlight-first` 类，样式更深（`#ffc107`），并调用 `scrollIntoView({ block: 'center' })` 滚动到可视区域中央
+2. **定位**：匹配完成后调用 `scrollIntoView({ block: 'center' })` 滚动到第一个匹配位置
 3. **目录树点击**：不传 `highlightTerms`，页面回到顶部，不高亮
 
 高亮样式定义在 `App.css`：
 - `.search-highlight`：淡黄底 `#fff3cd`
-- `.search-highlight-first`：深黄底 `#ffc107` + 加粗
 
 ### 模块总结
 
