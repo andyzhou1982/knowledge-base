@@ -48,8 +48,6 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onSelect }) => {
               onClick={() => {
                 const terms = query.trim().split(/\s+/).filter(Boolean);
                 onSelect(item.relativePath, terms);
-                setResults([]);
-                setQuery('');
               }}
             >
               <div style={{ width: '100%', overflow: 'hidden' }}>
